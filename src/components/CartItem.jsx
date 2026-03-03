@@ -1,6 +1,8 @@
 import React from 'react';
 
 const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
+  const atStockLimit = item.stock !== undefined && item.quantity >= item.stock;
+
   return (
     <div className="cart-item">
       <div className="cart-item-header">
@@ -12,31 +14,39 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
           </svg>
         </button>
       </div>
-      
+
       <div className="cart-item-controls">
         <span className="cart-item-price">LKR {item.price.toFixed(2)}</span>
-        
+
         <div className="quantity-controls">
-          <button 
-            className="btn-qty" 
+          <button
+            className="btn-qty"
             onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
             disabled={item.quantity <= 1}
           >
             -
           </button>
           <span className="qty-display">{item.quantity}</span>
-          <button 
-            className="btn-qty" 
+          <button
+            className="btn-qty"
             onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+            disabled={atStockLimit}
+            title={atStockLimit ? `Max stock: ${item.stock}` : ''}
           >
             +
           </button>
         </div>
-        
+
         <div className="cart-item-total">
           LKR {(item.price * item.quantity).toFixed(2)}
         </div>
       </div>
+
+      {atStockLimit && (
+        <p style={{ fontSize: '0.72rem', color: '#ff4757', marginTop: '0.15rem' }}>
+          Max available stock reached ({item.stock})
+        </p>
+      )}
     </div>
   );
 };

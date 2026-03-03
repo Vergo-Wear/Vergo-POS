@@ -33,28 +33,34 @@ function App() {
     fetchItems();
   }, []);
 
-  // Add an item to the cart
+  // Add an item to the cart (enforces stock limit)
   const handleAddItem = (item) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
       if (existingItem) {
+        // Don't exceed available stock
+        if (existingItem.quantity >= item.stock) return prevCart;
         return prevCart.map((cartItem) =>
           cartItem.id === item.id
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
       }
+      if (item.stock <= 0) return prevCart; // Out of stock
       return [...prevCart, { ...item, quantity: 1 }];
     });
   };
 
-  // Update quantity of a cart item
+  // Update quantity of a cart item (enforces stock limit)
   const handleUpdateQuantity = (id, newQuantity) => {
     if (newQuantity < 1) return;
     setCart((prevCart) =>
-      prevCart.map((item) =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
+      prevCart.map((item) => {
+        if (item.id !== id) return item;
+        // Clamp to available stock
+        const clamped = item.stock !== undefined ? Math.min(newQuantity, item.stock) : newQuantity;
+        return { ...item, quantity: clamped };
+      })
     );
   };
 
@@ -166,6 +172,12 @@ function App() {
     };
     setSaleData(finalSale);
     setIsGenerated(true);
+
+    // Refresh item list so stock counts update on the product grid
+    try {
+      const res = await fetch(`${API_URL}/api/items`);
+      if (res.ok) setItems(await res.json());
+    } catch (_) {}
   };
 
   const handlePrint = () => {
@@ -225,10 +237,10 @@ function App() {
           ) : (
             <div className="products-grid">
               {items.map((item) => (
-                <ItemCard 
-                  key={item._id} 
-                  item={item} 
-                  onAdd={() => handleAddItem({ id: item._id, ...item })} 
+                <ItemCard
+                  key={item._id}
+                  item={item}
+                  onAdd={() => handleAddItem({ id: item._id, _id: item._id, ...item })}
                 />
               ))}
             </div>

@@ -39,6 +39,20 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'Missing required sale data (items, amount, or order number).' });
     }
 
+    // Validate stock availability for all items before saving
+    const Item = require('../models/Item');
+    for (const saleItem of items) {
+      if (!saleItem.id && !saleItem._id) continue;
+      const itemId = saleItem.id || saleItem._id;
+      const dbItem = await Item.findById(itemId);
+      if (!dbItem) continue;
+      if (dbItem.stock < saleItem.quantity) {
+        return res.status(400).json({
+          message: `Insufficient stock for "${dbItem.name}". Available: ${dbItem.stock}, Requested: ${saleItem.quantity}`
+        });
+      }
+    }
+
     const newSale = new Sale({
       items,
       subtotalAmount: subtotalAmount || totalAmount,
@@ -50,6 +64,16 @@ router.post('/', async (req, res) => {
     });
 
     const sale = await newSale.save();
+
+    // Decrement stock for each sold item
+    for (const saleItem of items) {
+      const itemId = saleItem.id || saleItem._id;
+      if (!itemId) continue;
+      await Item.findByIdAndUpdate(itemId, {
+        $inc: { stock: -saleItem.quantity }
+      });
+    }
+
     res.status(201).json(sale);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
