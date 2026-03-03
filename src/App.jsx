@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import ItemCard from './components/ItemCard';
 import CartItem from './components/CartItem';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 function App() {
   const [cart, setCart] = useState([]);
   const [customerEmail, setCustomerEmail] = useState('');
@@ -17,7 +19,7 @@ function App() {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/items');
+        const res = await fetch(`${API_URL}/api/items`);
         const data = await res.json();
         setItems(data);
       } catch (err) {
@@ -105,7 +107,7 @@ function App() {
 
     // Call backend to save sale
     try {
-      await fetch('http://localhost:5000/api/sales', {
+      await fetch(`${API_URL}/api/sales`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

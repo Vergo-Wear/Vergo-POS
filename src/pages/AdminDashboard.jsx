@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../components/AdminLayout';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const AdminDashboard = () => {
   const [items, setItems] = useState([]);
   const [sales, setSales] = useState([]);
@@ -37,11 +39,11 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem('adminToken');
       const [itemsRes, salesRes, reportsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/items'),
-        fetch('http://localhost:5000/api/sales', {
+        fetch(`${API_URL}/api/items`),
+        fetch(`${API_URL}/api/sales`, {
           headers: { 'x-auth-token': token }
         }),
-        fetch('http://localhost:5000/api/sales/reports', {
+        fetch(`${API_URL}/api/sales/reports`, {
           headers: { 'x-auth-token': token }
         })
       ]);
@@ -81,7 +83,7 @@ const AdminDashboard = () => {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/items', {
+      const res = await fetch(`${API_URL}/api/items`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -126,7 +128,7 @@ const AdminDashboard = () => {
   const saveEdit = async (id) => {
     const token = localStorage.getItem('adminToken');
     try {
-      const res = await fetch(`http://localhost:5000/api/items/${id}`, {
+      const res = await fetch(`${API_URL}/api/items/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -153,7 +155,7 @@ const AdminDashboard = () => {
     if (!window.confirm('Are you sure you want to delete this item?')) return;
     const token = localStorage.getItem('adminToken');
     try {
-      const res = await fetch(`http://localhost:5000/api/items/${id}`, {
+      const res = await fetch(`${API_URL}/api/items/${id}`, {
         method: 'DELETE',
         headers: {
           'x-auth-token': token
@@ -180,7 +182,7 @@ const AdminDashboard = () => {
 
     try {
       console.log("Sending DELETE request to /api/sales/reset...");
-      const res = await fetch('http://localhost:5000/api/sales/reset', { 
+      const res = await fetch(`${API_URL}/api/sales/reset`, { 
         method: 'DELETE', 
         headers: { 
           'Content-Type': 'application/json',
