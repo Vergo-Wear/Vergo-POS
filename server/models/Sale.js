@@ -6,6 +6,16 @@ const saleSchema = new mongoose.Schema({
     price: Number,
     quantity: Number
   }],
+  subtotalAmount: {
+    type: Number,
+    required: false,
+    default: 0
+  },
+  discountAmount: {
+    type: Number,
+    required: false,
+    default: 0
+  },
   totalAmount: {
     type: Number,
     required: true

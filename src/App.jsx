@@ -14,6 +14,8 @@ function App() {
   const [showSummary, setShowSummary] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
   const [saleData, setSaleData] = useState(null);
+  const [discount, setDiscount] = useState('');
+  const [discountType, setDiscountType] = useState('amount'); // 'amount' or 'percent'
 
   // Fetch items from API on load
   useEffect(() => {
@@ -67,6 +69,13 @@ function App() {
     0
   );
 
+  // Calculate discount
+  const discountValue = parseFloat(discount) || 0;
+  const discountAmount = discountType === 'percent'
+    ? Math.min((cartTotal * discountValue) / 100, cartTotal)
+    : Math.min(discountValue, cartTotal);
+  const finalTotal = Math.max(cartTotal - discountAmount, 0);
+
   // Proceed to Summary
   const handleProceedToBill = () => {
     setEmailError('');
@@ -76,6 +85,10 @@ function App() {
     }
     if (customerEmail && !customerEmail.includes('@')) {
       setEmailError("Please enter a valid email address or leave it empty.");
+      return;
+    }
+    if (discountValue < 0) {
+      setEmailError("Discount cannot be negative.");
       return;
     }
     setIsGenerated(false);
@@ -100,7 +113,13 @@ function App() {
       billText += "---------------------------\n";
     });
 
-    billText += `\n*TOTAL DUE: LKR ${cartTotal.toFixed(2)}*\n`;
+    billText += `\nSUBTOTAL:  LKR ${cartTotal.toFixed(2)}\n`;
+    if (discountAmount > 0) {
+      billText += discountType === 'percent'
+        ? `DISCOUNT:  -LKR ${discountAmount.toFixed(2)} (${discountValue}%)\n`
+        : `DISCOUNT:  -LKR ${discountAmount.toFixed(2)}\n`;
+    }
+    billText += `*TOTAL DUE: LKR ${finalTotal.toFixed(2)}*\n`;
     billText += "===========================\n";
     if (customerEmail) billText += `Email: ${customerEmail}\n`;
     billText += "Thank you for shopping with us!\n";
@@ -112,7 +131,9 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items: cart,
-          totalAmount: cartTotal,
+          subtotalAmount: cartTotal,
+          discountAmount: discountAmount,
+          totalAmount: finalTotal,
           customerEmail: customerEmail || 'N/A',
           customerName: customerName || 'Guest',
           orderNumber: orderNum
@@ -135,7 +156,11 @@ function App() {
       customerEmail: customerEmail || 'N/A',
       customerName: customerName || 'Guest',
       items: [...cart],
-      total: cartTotal,
+      subtotal: cartTotal,
+      discountAmount: discountAmount,
+      discountType: discountType,
+      discountValue: discountValue,
+      total: finalTotal,
       date: new Date().toLocaleString(),
       orderNumber: orderNum
     };
@@ -155,6 +180,8 @@ function App() {
     setCustomerEmail('');
     setCustomerName('');
     setEmailError('');
+    setDiscount('');
+    setDiscountType('amount');
   };
 
   return (
@@ -267,9 +294,53 @@ function App() {
               <span>Total Items:</span>
               <span>{cart.reduce((sum, i) => sum + i.quantity, 0)}</span>
             </div>
+
+            {/* Discount Input */}
+            <div style={{ margin: '0.75rem 0', padding: '0.75rem', background: 'rgba(0,255,163,0.05)', borderRadius: '8px', border: '1px solid rgba(0,255,163,0.15)' }}>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: '600', letterSpacing: '0.5px' }}>DISCOUNT (OPTIONAL)</label>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <input
+                  type="number"
+                  id="discount-input"
+                  min="0"
+                  step="1"
+                  placeholder={discountType === 'percent' ? 'e.g. 10' : 'e.g. 500'}
+                  value={discount}
+                  onChange={(e) => setDiscount(e.target.value)}
+                  style={{ flex: 1, padding: '0.45rem 0.6rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '0.9rem' }}
+                />
+                <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
+                  <button
+                    onClick={() => setDiscountType('amount')}
+                    style={{ padding: '0.45rem 0.7rem', background: discountType === 'amount' ? 'var(--accent-green)' : 'transparent', color: discountType === 'amount' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}
+                  >LKR</button>
+                  <button
+                    onClick={() => setDiscountType('percent')}
+                    style={{ padding: '0.45rem 0.7rem', background: discountType === 'percent' ? 'var(--accent-green)' : 'transparent', color: discountType === 'percent' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>%</button>
+                </div>
+              </div>
+              {discountAmount > 0 && (
+                <p style={{ fontSize: '0.78rem', color: 'var(--accent-green)', marginTop: '0.3rem' }}>
+                  Saving: LKR {discountAmount.toFixed(2)}
+                </p>
+              )}
+            </div>
+
+            {discountAmount > 0 && (
+              <div className="totals-row" style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                <span>Subtotal:</span>
+                <span>LKR {cartTotal.toFixed(2)}</span>
+              </div>
+            )}
+            {discountAmount > 0 && (
+              <div className="totals-row" style={{ color: '#ff6b81', fontSize: '0.85rem' }}>
+                <span>Discount{discountType === 'percent' ? ` (${discountValue}%)` : ''}:</span>
+                <span>- LKR {discountAmount.toFixed(2)}</span>
+              </div>
+            )}
             <div className="totals-row grand-total">
               <span>Total Due:</span>
-              <span className="total-amount">LKR {cartTotal.toFixed(2)}</span>
+              <span className="total-amount">LKR {finalTotal.toFixed(2)}</span>
             </div>
             <button 
               className={`btn-bill ${cart.length === 0 ? 'disabled' : ''}`}
@@ -311,7 +382,20 @@ function App() {
                       ))}
                     </tbody>
                   </table>
-                  <h3 className="summary-total">Total: LKR {cartTotal.toFixed(2)}</h3>
+                  <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
+                    {discountAmount > 0 && (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
+                          <span>Subtotal</span><span>LKR {cartTotal.toFixed(2)}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#ff6b81', marginBottom: '0.3rem' }}>
+                          <span>Discount{discountType === 'percent' ? ` (${discountValue}%)` : ''}</span>
+                          <span>- LKR {discountAmount.toFixed(2)}</span>
+                        </div>
+                      </>
+                    )}
+                    <h3 className="summary-total">Total: LKR {finalTotal.toFixed(2)}</h3>
+                  </div>
                 </div>
                 <div className="modal-actions">
                   <button className="btn-secondary" onClick={() => setShowSummary(false)}>Back to Cart</button>
@@ -368,8 +452,14 @@ function App() {
                   <div className="receipt-total-section" style={{ background: '#f9f9f9', padding: '1rem', borderRadius: '4px' }}>
                     <div className="receipt-total-row">
                       <span style={{ color: '#666' }}>SUBTOTAL</span>
-                      <span style={{ fontWeight: '600' }}>LKR {saleData.total.toFixed(2)}</span>
+                      <span style={{ fontWeight: '600' }}>LKR {saleData.subtotal.toFixed(2)}</span>
                     </div>
+                    {saleData.discountAmount > 0 && (
+                      <div className="receipt-total-row" style={{ color: '#e84393' }}>
+                        <span>DISCOUNT{saleData.discountType === 'percent' ? ` (${saleData.discountValue}%)` : ''}</span>
+                        <span style={{ fontWeight: '600' }}>- LKR {saleData.discountAmount.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="receipt-total-row receipt-grand-total" style={{ borderTop: '2px solid #000', paddingTop: '0.5rem' }}>
                       <span style={{ fontWeight: '800' }}>TOTAL AMOUNT</span>
                       <span style={{ fontWeight: '800', fontSize: '1.6rem' }}>LKR {saleData.total.toFixed(2)}</span>

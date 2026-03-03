@@ -290,19 +290,23 @@ const AdminDashboard = () => {
                       <th>Customer Name</th>
                       <th>Customer Email</th>
                       <th>Items Sold</th>
+                      <th>Discount</th>
                       <th>Amount (LKR)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sales.map(s => (
-                      <tr key={s._id}>
-                        <td style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{s.orderNumber || 'N/A'}</td>
-                        <td>{new Date(s.date).toLocaleDateString()} {new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                        <td style={{ fontWeight: '600' }}>{s.customerName || 'Guest'}</td>
-                        <td style={{ color: 'var(--accent-green)' }}>{s.customerEmail}</td>
-                        <td>{s.items.reduce((sum, i) => sum + i.quantity, 0)} items</td>
-                        <td style={{ fontWeight: 'bold' }}>{s.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                      </tr>
+                        <tr key={s._id}>
+                          <td style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{s.orderNumber || 'N/A'}</td>
+                          <td>{new Date(s.date).toLocaleDateString()} {new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                          <td style={{ fontWeight: '600' }}>{s.customerName || 'Guest'}</td>
+                          <td style={{ color: 'var(--accent-green)' }}>{s.customerEmail}</td>
+                          <td>{s.items.reduce((sum, i) => sum + i.quantity, 0)} items</td>
+                          <td style={{ color: s.discountAmount > 0 ? '#ff6b81' : 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                            {s.discountAmount > 0 ? `- LKR ${s.discountAmount.toFixed(2)}` : '—'}
+                          </td>
+                          <td style={{ fontWeight: 'bold' }}>{s.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        </tr>
                     ))}
                   </tbody>
                 </table>
@@ -448,7 +452,7 @@ const AdminDashboard = () => {
               {selectedReport && (
                 <div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '2rem', maxHeight: '60vh', overflowY: 'auto' }}>
                   <h4 style={{ marginBottom: '1rem', color: 'var(--accent-green)' }}>Report Details: {new Date(selectedReport.reportDate).toLocaleDateString()}</h4>
-                  <div style={{ marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div style={{ marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                     <div style={{ background: 'var(--bg-color)', padding: '1rem', borderRadius: '8px' }}>
                       <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>TOTAL REVENUE</p>
                       <p style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>LKR {selectedReport.totalRevenue.toFixed(2)}</p>
@@ -457,12 +461,17 @@ const AdminDashboard = () => {
                       <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>TOTAL ORDERS</p>
                       <p style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{selectedReport.totalOrders}</p>
                     </div>
+                    <div style={{ background: 'var(--bg-color)', padding: '1rem', borderRadius: '8px' }}>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>TOTAL DISCOUNTS</p>
+                      <p style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#ff6b81' }}>{selectedReport.totalDiscounts > 0 ? `- LKR ${selectedReport.totalDiscounts.toFixed(2)}` : '—'}</p>
+                    </div>
                   </div>
 
                   <table className="inventory-table" style={{ fontSize: '0.85rem' }}>
                     <thead>
                       <tr>
                         <th>Order #</th>
+                        <th>Discount</th>
                         <th>Amount</th>
                       </tr>
                     </thead>
@@ -470,6 +479,9 @@ const AdminDashboard = () => {
                       {selectedReport.sales.map((s, idx) => (
                         <tr key={idx}>
                           <td>{s.orderNumber}</td>
+                          <td style={{ color: s.discountAmount > 0 ? '#ff6b81' : 'var(--text-secondary)' }}>
+                            {s.discountAmount > 0 ? `- LKR ${s.discountAmount.toFixed(2)}` : '—'}
+                          </td>
                           <td>LKR {s.totalAmount.toFixed(2)}</td>
                         </tr>
                       ))}

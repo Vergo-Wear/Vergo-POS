@@ -33,7 +33,7 @@ router.get('/', auth, async (req, res) => {
 // @access  Public
 router.post('/', async (req, res) => {
   try {
-    const { items, totalAmount, customerEmail, customerName, orderNumber } = req.body;
+    const { items, subtotalAmount, discountAmount, totalAmount, customerEmail, customerName, orderNumber } = req.body;
 
     if (!items || !totalAmount || !orderNumber) {
       return res.status(400).json({ message: 'Missing required sale data (items, amount, or order number).' });
@@ -41,6 +41,8 @@ router.post('/', async (req, res) => {
 
     const newSale = new Sale({
       items,
+      subtotalAmount: subtotalAmount || totalAmount,
+      discountAmount: discountAmount || 0,
       totalAmount,
       customerEmail: customerEmail || 'N/A',
       customerName: customerName || 'Guest',
@@ -67,11 +69,14 @@ router.delete('/reset', auth, async (req, res) => {
 
     const totalRevenue = activeSales.reduce((sum, s) => sum + s.totalAmount, 0);
     const totalOrders = activeSales.length;
+    const totalDiscounts = activeSales.reduce((sum, s) => sum + (s.discountAmount || 0), 0);
 
     // Create Archive Report
     const reportData = activeSales.map(s => ({
       orderNumber: s.orderNumber,
       customerName: s.customerName,
+      subtotalAmount: s.subtotalAmount || s.totalAmount,
+      discountAmount: s.discountAmount || 0,
       totalAmount: s.totalAmount,
       date: s.date
     }));
@@ -79,6 +84,7 @@ router.delete('/reset', auth, async (req, res) => {
     const newReport = new DailyReport({
       totalRevenue,
       totalOrders,
+      totalDiscounts,
       sales: reportData
     });
 
