@@ -235,122 +235,121 @@ function App() {
           )}
         </section>
 
-        {/* Right Column: Cart Summary */}
+        {/* Right: Cart — two columns side by side */}
         <aside className="cart-section">
-          <h2>Current Order</h2>
-          <div className="cart-items-container">
-            {cart.length === 0 ? (
-              <div className="empty-cart-state">
-                <p>No items selected.</p>
-                <p>Tap items to add them to the bill.</p>
-              </div>
-            ) : (
-              cart.map((item) => (
-                <CartItem 
-                  key={item.id} 
-                  item={item} 
-                  onUpdateQuantity={handleUpdateQuantity}
-                  onRemove={handleRemoveItem}
-                />
-              ))
-            )}
+
+          {/* LEFT: Cart Items */}
+          <div className="cart-left">
+            <h2>Current Order</h2>
+            <div className="cart-items-container">
+              {cart.length === 0 ? (
+                <div className="empty-cart-state">
+                  <p>No items selected.</p>
+                  <p>Tap items to add them to the bill.</p>
+                </div>
+              ) : (
+                cart.map((item) => (
+                  <CartItem
+                    key={item.id}
+                    item={item}
+                    onUpdateQuantity={handleUpdateQuantity}
+                    onRemove={handleRemoveItem}
+                  />
+                ))
+              )}
+            </div>
           </div>
 
-          {/* Cart Footer / Totals */}
-          <div className="cart-footer">
-            <div className="email-input-container" style={{ gap: '1rem' }}>
+          {/* RIGHT: Customer Details + Billing */}
+          <div className="cart-right">
+            <h2>Customer Details</h2>
+            <div className="cart-right-body">
+
+              {/* Customer Name */}
               <div className="input-field">
-                <label htmlFor="customer-name">Customer Name</label>
-                <input 
-                  type="text" 
-                  id="customer-name" 
+                <label htmlFor="customer-name" className="cart-label">Customer Name</label>
+                <input
+                  type="text"
+                  id="customer-name"
                   placeholder="e.g. John Doe"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   className="email-input"
-                  style={{ marginBottom: '1rem' }}
                 />
               </div>
 
+              {/* Customer Email */}
               <div className="input-field">
-                <label htmlFor="customer-email">Customer Email (Optional)</label>
-                <input 
-                  type="email" 
-                  id="customer-email" 
+                <label htmlFor="customer-email" className="cart-label">Customer Email <span style={{ fontWeight: 400, opacity: 0.6 }}>(Optional)</span></label>
+                <input
+                  type="email"
+                  id="customer-email"
                   placeholder="customer@example.com"
                   value={customerEmail}
-                  onChange={(e) => {
-                    setCustomerEmail(e.target.value);
-                    setEmailError('');
-                  }}
+                  onChange={(e) => { setCustomerEmail(e.target.value); setEmailError(''); }}
                   className={`email-input ${emailError ? 'error-border' : ''}`}
                   style={emailError ? { borderColor: '#ff4757' } : {}}
                 />
-                {emailError && <div style={{ color: '#ff4757', fontSize: '0.8rem', marginTop: '0.25rem' }}>{emailError}</div>}
+                {emailError && <div style={{ color: '#ff4757', fontSize: '0.75rem', marginTop: '0.25rem' }}>{emailError}</div>}
               </div>
-            </div>
 
-            <div className="totals-row">
-              <span>Total Items:</span>
-              <span>{cart.reduce((sum, i) => sum + i.quantity, 0)}</span>
-            </div>
+              {/* Discount */}
+              <div className="discount-block">
+                <label className="cart-label">Discount <span style={{ fontWeight: 400, opacity: 0.6 }}>(Optional)</span></label>
+                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                  <input
+                    type="number"
+                    id="discount-input"
+                    min="0"
+                    step="1"
+                    placeholder={discountType === 'percent' ? '10' : '500'}
+                    value={discount}
+                    onChange={(e) => setDiscount(e.target.value)}
+                    style={{ flex: 1, padding: '0.4rem 0.5rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '0.85rem', fontFamily: 'inherit' }}
+                  />
+                  <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
+                    <button onClick={() => setDiscountType('amount')} style={{ padding: '0.4rem 0.55rem', background: discountType === 'amount' ? 'var(--accent-green)' : 'transparent', color: discountType === 'amount' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.78rem' }}>LKR</button>
+                    <button onClick={() => setDiscountType('percent')} style={{ padding: '0.4rem 0.55rem', background: discountType === 'percent' ? 'var(--accent-green)' : 'transparent', color: discountType === 'percent' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.78rem' }}>%</button>
+                  </div>
+                </div>
+                {discountAmount > 0 && <p style={{ fontSize: '0.72rem', color: 'var(--accent-green)', marginTop: '0.25rem' }}>Saving: LKR {discountAmount.toFixed(2)}</p>}
+              </div>
 
-            {/* Discount Input */}
-            <div style={{ margin: '0.75rem 0', padding: '0.75rem', background: 'rgba(0,255,163,0.05)', borderRadius: '8px', border: '1px solid rgba(0,255,163,0.15)' }}>
-              <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: '600', letterSpacing: '0.5px' }}>DISCOUNT (OPTIONAL)</label>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <input
-                  type="number"
-                  id="discount-input"
-                  min="0"
-                  step="1"
-                  placeholder={discountType === 'percent' ? 'e.g. 10' : 'e.g. 500'}
-                  value={discount}
-                  onChange={(e) => setDiscount(e.target.value)}
-                  style={{ flex: 1, padding: '0.45rem 0.6rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '0.9rem' }}
-                />
-                <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
-                  <button
-                    onClick={() => setDiscountType('amount')}
-                    style={{ padding: '0.45rem 0.7rem', background: discountType === 'amount' ? 'var(--accent-green)' : 'transparent', color: discountType === 'amount' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}
-                  >LKR</button>
-                  <button
-                    onClick={() => setDiscountType('percent')}
-                    style={{ padding: '0.45rem 0.7rem', background: discountType === 'percent' ? 'var(--accent-green)' : 'transparent', color: discountType === 'percent' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>%</button>
+              {/* Totals */}
+              <div className="cart-totals">
+                <div className="totals-row">
+                  <span>Total Items:</span>
+                  <span>{cart.reduce((sum, i) => sum + i.quantity, 0)}</span>
+                </div>
+                {discountAmount > 0 && (
+                  <div className="totals-row" style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                    <span>Subtotal:</span><span>LKR {cartTotal.toFixed(2)}</span>
+                  </div>
+                )}
+                {discountAmount > 0 && (
+                  <div className="totals-row" style={{ color: '#ff6b81', fontSize: '0.82rem' }}>
+                    <span>Discount{discountType === 'percent' ? ` (${discountValue}%)` : ''}:</span>
+                    <span>- LKR {discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="totals-row grand-total">
+                  <span>Total Due:</span>
+                  <span className="total-amount">LKR {finalTotal.toFixed(2)}</span>
                 </div>
               </div>
-              {discountAmount > 0 && (
-                <p style={{ fontSize: '0.78rem', color: 'var(--accent-green)', marginTop: '0.3rem' }}>
-                  Saving: LKR {discountAmount.toFixed(2)}
-                </p>
-              )}
-            </div>
 
-            {discountAmount > 0 && (
-              <div className="totals-row" style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                <span>Subtotal:</span>
-                <span>LKR {cartTotal.toFixed(2)}</span>
-              </div>
-            )}
-            {discountAmount > 0 && (
-              <div className="totals-row" style={{ color: '#ff6b81', fontSize: '0.85rem' }}>
-                <span>Discount{discountType === 'percent' ? ` (${discountValue}%)` : ''}:</span>
-                <span>- LKR {discountAmount.toFixed(2)}</span>
-              </div>
-            )}
-            <div className="totals-row grand-total">
-              <span>Total Due:</span>
-              <span className="total-amount">LKR {finalTotal.toFixed(2)}</span>
+              <button
+                className={`btn-bill ${cart.length === 0 ? 'disabled' : ''}`}
+                onClick={handleProceedToBill}
+                disabled={cart.length === 0}
+              >
+                Proceed to Bill
+              </button>
             </div>
-            <button 
-              className={`btn-bill ${cart.length === 0 ? 'disabled' : ''}`}
-              onClick={handleProceedToBill}
-              disabled={cart.length === 0}
-            >
-              Proceed to Bill
-            </button>
           </div>
+
         </aside>
+
 
       </main>
 
