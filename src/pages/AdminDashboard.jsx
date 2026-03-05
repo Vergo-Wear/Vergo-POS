@@ -105,7 +105,7 @@ const AdminDashboard = () => {
           name,
           price: Number(price),
           category,
-          stock: Number(stock)
+          stock  // per-size object { XS: 5, S: 3, ... }
         })
       });
 
@@ -114,7 +114,7 @@ const AdminDashboard = () => {
         setName('');
         setPrice('');
         setCategory('');
-        setStock('');
+        setStock(emptyStock());
         fetchItemsAndSales(); // Refresh the list
       } else {
         const data = await res.json();
