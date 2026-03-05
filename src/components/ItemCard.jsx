@@ -5,10 +5,19 @@ const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 const ItemCard = ({ item, onAdd }) => {
   const [showSizePicker, setShowSizePicker] = useState(false);
 
-  // Build size→qty map from item.stock (comes as plain object from API)
-  const stockMap = item.stock || {};
-  const availableSizes = SIZES.filter(s => (stockMap[s] || 0) > 0);
-  const totalStock = availableSizes.reduce((sum, s) => sum + (stockMap[s] || 0), 0);
+  // Support both legacy flat number stock and new per-size object stock
+  const isLegacyStock = typeof item.stock === 'number';
+  const stockMap = (!isLegacyStock && item.stock && typeof item.stock === 'object') ? item.stock : {};
+
+  const availableSizes = isLegacyStock
+    ? []   // legacy items have no size info; handled separately
+    : SIZES.filter(s => (stockMap[s] || 0) > 0);
+
+  const totalStock = isLegacyStock
+    ? item.stock
+    : availableSizes.reduce((sum, s) => sum + (stockMap[s] || 0), 0);
+
+  // Only mark out-of-stock when ALL sizes (or the flat number) are 0
   const outOfStock = totalStock <= 0;
 
   const handleSizeSelect = (size) => {
@@ -26,10 +35,14 @@ const ItemCard = ({ item, onAdd }) => {
         <span className="item-category">{item.category}</span>
       </div>
 
-      {/* Available size badges */}
+      {/* Size / stock display */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
-        {availableSizes.length === 0 ? (
+        {outOfStock ? (
           <span style={{ fontSize: '0.72rem', color: '#ff4757', fontWeight: 700 }}>Out of Stock</span>
+        ) : isLegacyStock ? (
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+            Stock: {item.stock} &nbsp;<span style={{ opacity: 0.5 }}>(set sizes in admin)</span>
+          </span>
         ) : (
           availableSizes.map(s => (
             <span key={s} style={{
@@ -54,7 +67,15 @@ const ItemCard = ({ item, onAdd }) => {
           <div style={{ position: 'relative' }}>
             <button
               className="btn-add"
-              onClick={(e) => { e.stopPropagation(); setShowSizePicker(p => !p); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isLegacyStock) {
+                  // Legacy: no size selection, add directly without size
+                  onAdd(null);
+                } else {
+                  setShowSizePicker(p => !p);
+                }
+              }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -62,27 +83,17 @@ const ItemCard = ({ item, onAdd }) => {
               </svg>
             </button>
 
-            {/* Size picker dropdown */}
-            {showSizePicker && (
-              <div
-                className="size-picker-dropdown"
-                onClick={e => e.stopPropagation()}
-              >
+            {/* Size picker dropdown (only for per-size stock items) */}
+            {showSizePicker && !isLegacyStock && (
+              <div className="size-picker-dropdown" onClick={e => e.stopPropagation()}>
                 <p className="size-picker-title">Select Size</p>
                 {availableSizes.map(s => (
-                  <button
-                    key={s}
-                    className="size-picker-btn"
-                    onClick={() => handleSizeSelect(s)}
-                  >
+                  <button key={s} className="size-picker-btn" onClick={() => handleSizeSelect(s)}>
                     <span>{s}</span>
                     <span style={{ fontSize: '0.72rem', opacity: 0.65 }}>({stockMap[s]} left)</span>
                   </button>
                 ))}
-                <button
-                  className="size-picker-close"
-                  onClick={() => setShowSizePicker(false)}
-                >Cancel</button>
+                <button className="size-picker-close" onClick={() => setShowSizePicker(false)}>Cancel</button>
               </div>
             )}
           </div>

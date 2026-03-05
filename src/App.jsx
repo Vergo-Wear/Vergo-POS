@@ -33,11 +33,16 @@ function App() {
     fetchItems();
   }, []);
 
-  // Add an item to the cart (enforces per-size stock limit)
+  // Add an item to the cart — handles both legacy (null size) and per-size stock
   const handleAddItem = (item, size) => {
-    const cartKey = `${item._id}-${size}`;
-    const stockMap = item.stock || {};
-    const sizeStock = stockMap[size] || 0;
+    const isLegacy = size === null || size === undefined;
+    const cartKey = isLegacy ? `${item._id}-nosize` : `${item._id}-${size}`;
+
+    // Stock limit for this cart entry
+    const sizeStock = isLegacy
+      ? (typeof item.stock === 'number' ? item.stock : 0)
+      : ((item.stock && item.stock[size]) || 0);
+
     setCart((prevCart) => {
       const existingItem = prevCart.find((ci) => ci.cartKey === cartKey);
       if (existingItem) {
@@ -47,7 +52,7 @@ function App() {
         );
       }
       if (sizeStock <= 0) return prevCart;
-      return [...prevCart, { ...item, id: item._id, cartKey, size, sizeStock, quantity: 1 }];
+      return [...prevCart, { ...item, id: item._id, cartKey, size: size || null, sizeStock, quantity: 1 }];
     });
   };
 
