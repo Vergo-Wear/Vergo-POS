@@ -2,12 +2,6 @@ const mongoose = require('mongoose');
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 
-// Use a plain nested object schema instead of Map for easier JSON serialisation
-const stockFields = {};
-SIZES.forEach(size => {
-  stockFields[size] = { type: Number, default: 0, min: 0 };
-});
-
 const itemSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -24,8 +18,10 @@ const itemSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  // Mixed type: stores plain JS object { XS:5, S:0, ... } or legacy number
+  // Mixed serialises exactly as stored — no subdoc quirks
   stock: {
-    type: new mongoose.Schema(stockFields, { _id: false }),
+    type: mongoose.Schema.Types.Mixed,
     default: () => {
       const s = {};
       SIZES.forEach(sz => s[sz] = 0);

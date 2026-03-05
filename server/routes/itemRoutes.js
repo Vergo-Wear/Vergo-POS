@@ -3,13 +3,28 @@ const router = express.Router();
 const Item = require('../models/Item');
 const auth = require('../middleware/auth');
 
+const SIZES_LIST = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+
 // @route   GET /api/items
 // @desc    Get all items
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const items = await Item.find().sort({ createdAt: -1 });
-    res.json(items);
+    // .lean() returns plain JS objects — ensures stock serialises correctly
+    const items = await Item.find().sort({ createdAt: -1 }).lean();
+
+    // Normalise stock: if missing or wrong type, return empty size object
+    const normalised = items.map(item => {
+      if (typeof item.stock === 'number') return item; // legacy flat stock, keep as-is
+      if (!item.stock || typeof item.stock !== 'object') {
+        const s = {};
+        SIZES_LIST.forEach(sz => { s[sz] = 0; });
+        return { ...item, stock: s };
+      }
+      return item;
+    });
+
+    res.json(normalised);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -21,47 +36,43 @@ router.get('/', async (req, res) => {
 router.post('/', auth, async (req, res) => {
   try {
     const { name, price, category, stock } = req.body;
-    const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 
     if (!name || !price || !category) {
       return res.status(400).json({ message: 'Please provide name, price, and category.' });
     }
 
-    // Build a safe stock object (ignore any non-size keys)
+    // Build a safe stock object
     const stockObj = {};
-    SIZES.forEach(sz => {
+    SIZES_LIST.forEach(sz => {
       stockObj[sz] = (stock && stock[sz] !== undefined) ? Number(stock[sz]) : 0;
     });
 
     const newItem = new Item({ name, price, category, stock: stockObj });
     const item = await newItem.save();
-    res.status(201).json(item);
+    res.status(201).json(item.toObject());
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
 // @route   PUT /api/items/:id/stock
-// @desc    Update stock for an item
+// @desc    Update stock for an item (legacy endpoint)
 // @access  Private (Admin only)
 router.put('/:id/stock', auth, async (req, res) => {
   try {
     const { stock } = req.body;
-    
+
     if (stock === undefined) {
       return res.status(400).json({ message: 'Please provide stock quantity.' });
     }
 
     const item = await Item.findByIdAndUpdate(
       req.params.id,
-      { $set: { stock: stock } },
-      { new: true }
+      { $set: { stock } },
+      { new: true, lean: true }
     );
 
-    if (!item) {
-      return res.status(404).json({ message: 'Item not found.' });
-    }
-
+    if (!item) return res.status(404).json({ message: 'Item not found.' });
     res.json(item);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -74,29 +85,25 @@ router.put('/:id/stock', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   try {
     const { name, price, category, stock } = req.body;
-    const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 
     const updateData = {};
     if (name) updateData.name = name;
     if (price !== undefined) updateData.price = price;
     if (category) updateData.category = category;
     if (stock && typeof stock === 'object') {
-      // Set each size field individually to avoid overwriting the whole subdoc
-      SIZES.forEach(sz => {
-        updateData[`stock.${sz}`] = Number(stock[sz]) || 0;
-      });
+      // For Mixed type — replace the whole stock object at once
+      const stockObj = {};
+      SIZES_LIST.forEach(sz => { stockObj[sz] = Number(stock[sz]) || 0; });
+      updateData.stock = stockObj;
     }
 
     const item = await Item.findByIdAndUpdate(
       req.params.id,
       { $set: updateData },
-      { new: true }
+      { new: true, lean: true }
     );
 
-    if (!item) {
-      return res.status(404).json({ message: 'Item not found.' });
-    }
-
+    if (!item) return res.status(404).json({ message: 'Item not found.' });
     res.json(item);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -109,9 +116,7 @@ router.put('/:id', auth, async (req, res) => {
 router.delete('/:id', auth, async (req, res) => {
   try {
     const item = await Item.findByIdAndDelete(req.params.id);
-    if (!item) {
-      return res.status(404).json({ message: 'Item not found.' });
-    }
+    if (!item) return res.status(404).json({ message: 'Item not found.' });
     res.json({ message: 'Item deleted.' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
