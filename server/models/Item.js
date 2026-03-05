@@ -2,9 +2,10 @@ const mongoose = require('mongoose');
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 
-const sizeStockSchema = {};
+// Use a plain nested object schema instead of Map for easier JSON serialisation
+const stockFields = {};
 SIZES.forEach(size => {
-  sizeStockSchema[size] = { type: Number, default: 0, min: 0 };
+  stockFields[size] = { type: Number, default: 0, min: 0 };
 });
 
 const itemSchema = new mongoose.Schema({
@@ -24,8 +25,7 @@ const itemSchema = new mongoose.Schema({
     trim: true
   },
   stock: {
-    type: Map,
-    of: Number,
+    type: new mongoose.Schema(stockFields, { _id: false }),
     default: () => {
       const s = {};
       SIZES.forEach(sz => s[sz] = 0);

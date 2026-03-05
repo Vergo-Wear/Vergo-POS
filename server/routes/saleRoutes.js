@@ -50,7 +50,7 @@ router.post('/', async (req, res) => {
 
       const size = saleItem.size;
       if (size) {
-        const available = dbItem.stock.get(size) || 0;
+        const available = (dbItem.stock && dbItem.stock[size] !== undefined) ? dbItem.stock[size] : 0;
         if (available < saleItem.quantity) {
           return res.status(400).json({
             message: `Insufficient stock for "${dbItem.name}" in size ${size}. Available: ${available}, Requested: ${saleItem.quantity}`
