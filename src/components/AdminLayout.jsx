@@ -6,7 +6,7 @@ const AdminLayout = ({ children }) => {
       {/* Admin Header */}
       <header className="app-header admin-header">
         <div className="logo-area">
-          <img src="/logo.png" alt="Vergo Logo" className="app-logo" />
+          <img src="/logo white.png" alt="Vergo Logo" className="app-logo" />
           <h4>Admin</h4>
         </div>
         <button 

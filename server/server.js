@@ -47,7 +47,9 @@ app.get('/', (req, res) => {
 const adminRoutes = require('./routes/adminRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const saleRoutes = require('./routes/saleRoutes');
+const sellerRoutes = require('./routes/sellerRoutes');
 
 app.use('/api/admin', adminRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/sales', saleRoutes);
+app.use('/api/seller', sellerRoutes);

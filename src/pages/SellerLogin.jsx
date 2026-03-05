@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const Login = () => {
+const SellerLogin = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -16,7 +16,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/admin/login`, {
+      const response = await fetch(`${API_URL}/api/seller/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -27,8 +27,8 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('adminToken', data.token);
-        navigate('/admin');
+        localStorage.setItem('sellerToken', data.token);
+        navigate('/');
       } else {
         setError(data.message || 'Login failed');
       }
@@ -44,7 +44,7 @@ const Login = () => {
       <div className="login-card">
         <div className="logo-area" style={{ justifyContent: 'center', marginBottom: '2rem' }}>
           <img src="/logo white.png" alt="Vergo Logo" className="app-logo" style={{ height: '40px' }} />
-          <h4>Admin Portal</h4>
+          <h4>POS Login</h4>
         </div>
         
         {error && <div className="error-message">{error}</div>}
@@ -70,14 +70,19 @@ const Login = () => {
               required 
             />
           </div>
-          <button type="submit" className="btn-login" disabled={loading}>
-            {loading ? 'Authenticating...' : 'Login to Dashboard'}
+          <button type="submit" className="btn-seller-login" disabled={loading}>
+            {loading ? 'Authenticating...' : 'Login to POS'}
           </button>
         </form>
-        
-        <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-          <button className="btn-back" onClick={() => navigate('/seller-login')}>
-            &larr; Go to POS Dashboard
+
+        <div style={{ textAlign: 'center', marginTop: '2rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>Are you an Admin?</p>
+          <button 
+            className="btn-back" 
+            onClick={() => navigate('/login')}
+            style={{ color: 'var(--accent-green)', textDecoration: 'none', fontWeight: 'bold' }}
+          >
+            Go to Admin Portal &rarr;
           </button>
         </div>
       </div>
@@ -85,4 +90,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default SellerLogin;

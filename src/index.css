@@ -674,6 +674,28 @@ button {
   cursor: not-allowed;
 }
 
+.btn-seller-login {
+  background: var(--accent-green);
+  color: var(--bg-color);
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  margin-top: 1rem;
+  transition: all 0.3s;
+}
+
+.btn-seller-login:hover:not(:disabled) {
+  background: var(--accent-green-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 255, 163, 0.2);
+}
+
+.btn-seller-login:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .btn-back {
   color: var(--text-secondary);
   font-size: 0.9rem;

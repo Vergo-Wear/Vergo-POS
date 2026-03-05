@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ItemCard from './components/ItemCard';
 import CartItem from './components/CartItem';
 
@@ -16,6 +17,21 @@ function App() {
   const [saleData, setSaleData] = useState(null);
   const [discount, setDiscount] = useState('');
   const [discountType, setDiscountType] = useState('amount'); // 'amount' or 'percent'
+
+  const navigate = useNavigate();
+
+  // Check for authentication
+  useEffect(() => {
+    const token = localStorage.getItem('sellerToken');
+    if (!token) {
+      navigate('/seller-login');
+    }
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('sellerToken');
+    navigate('/seller-login');
+  };
 
   // Fetch items from API on load
   useEffect(() => {
@@ -206,26 +222,43 @@ function App() {
       {/* Header */}
       <header className="app-header">
         <div className="logo-area">
-          <img src="/logo.png" alt="Vergo Logo" className="app-logo" />
+          <img src="/logo white.png" alt="Vergo Logo" className="app-logo" />
           <h4>POS</h4>
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
           <p className="subtitle">Point of Sale</p>
-          <a 
-            href="/login" 
-            style={{ 
-              color: 'var(--accent-green)', 
-              textDecoration: 'none', 
-              fontSize: '0.9rem', 
-              fontWeight: '500',
-              border: '1px solid var(--accent-green)',
-              padding: '0.4rem 0.8rem',
-              borderRadius: '4px'
-            }}
-          >
-            Admin Panel
-          </a>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <a 
+              href="/login" 
+              style={{ 
+                color: 'var(--accent-green)', 
+                textDecoration: 'none', 
+                fontSize: '0.9rem', 
+                fontWeight: '500',
+                border: '1px solid var(--accent-green)',
+                padding: '0.4rem 0.8rem',
+                borderRadius: '4px'
+              }}
+            >
+              Admin Panel
+            </a>
+            <button 
+              onClick={handleLogout}
+              style={{ 
+                background: 'transparent',
+                color: '#ff4757', 
+                border: '1px solid #ff4757',
+                padding: '0.4rem 0.8rem',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: '500'
+              }}
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -428,7 +461,7 @@ function App() {
                 
                 <div className="receipt-container">
                   <div className="receipt-header">
-                    <img src="/logo-black.png" alt="Vergo Logo" style={{ height: '40px', marginBottom: '0.5rem' }} />
+                    <img src="/logo black.png" alt="Vergo Logo" style={{ height: '40px', marginBottom: '0.5rem' }} />
                     <h2 style={{ fontWeight: '800', letterSpacing: '1px' }}>VERGO OFFICIAL</h2>
                     <p style={{ fontSize: '0.8rem', opacity: 0.8 }}>PREMIUM CLOTHING STORE</p>
                   </div>
