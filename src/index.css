@@ -218,6 +218,71 @@ button {
   transform: scale(1.1);
 }
 
+/* Size picker dropdown on ItemCard */
+.size-picker-dropdown {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 0.6rem;
+  z-index: 100;
+  min-width: 150px;
+  box-shadow: var(--shadow-md);
+  animation: fadeInUp 0.15s ease;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.size-picker-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+}
+
+.size-picker-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.size-picker-btn:hover {
+  background: var(--accent-green-transparent);
+  color: var(--accent-green);
+}
+
+.size-picker-close {
+  width: 100%;
+  margin-top: 0.4rem;
+  padding: 0.3rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.size-picker-close:hover {
+  background: rgba(255,71,87,0.08);
+  color: #ff4757;
+  border-color: #ff4757;
+}
+
 /* ---------------- Cart Section — side-by-side layout ---------------- */
 .cart-section {
   width: 680px;

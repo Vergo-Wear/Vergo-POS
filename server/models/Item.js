@@ -1,5 +1,12 @@
 const mongoose = require('mongoose');
 
+const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+
+const sizeStockSchema = {};
+SIZES.forEach(size => {
+  sizeStockSchema[size] = { type: Number, default: 0, min: 0 };
+});
+
 const itemSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -17,11 +24,15 @@ const itemSchema = new mongoose.Schema({
     trim: true
   },
   stock: {
-    type: Number,
-    required: true,
-    default: 0,
-    min: 0
+    type: Map,
+    of: Number,
+    default: () => {
+      const s = {};
+      SIZES.forEach(sz => s[sz] = 0);
+      return s;
+    }
   }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Item', itemSchema);
+module.exports.SIZES = SIZES;

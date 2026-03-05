@@ -3,6 +3,14 @@ import AdminLayout from '../components/AdminLayout';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+
+const emptyStock = () => {
+  const s = {};
+  SIZES.forEach(sz => s[sz] = 0);
+  return s;
+};
+
 const AdminDashboard = () => {
   const [items, setItems] = useState([]);
   const [sales, setSales] = useState([]);
@@ -13,7 +21,7 @@ const AdminDashboard = () => {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('');
-  const [stock, setStock] = useState('');
+  const [stock, setStock] = useState(emptyStock());
   const [message, setMessage] = useState('');
 
   // Edit State
@@ -21,7 +29,7 @@ const AdminDashboard = () => {
   const [editName, setEditName] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editCategory, setEditCategory] = useState('');
-  const [editStock, setEditStock] = useState('');
+  const [editStock, setEditStock] = useState(emptyStock());
 
   // Report Modal State
   const [showReports, setShowReports] = useState(false);
@@ -30,8 +38,12 @@ const AdminDashboard = () => {
   // Custom Confirm State
   const [isResetConfirming, setIsResetConfirming] = useState(false);
 
-  // Total Value
-  const totalValue = items.reduce((sum, item) => sum + (item.price * item.stock), 0);
+  // Total inventory value: sum price × total stock across all sizes
+  const getTotalStock = (item) => {
+    if (!item.stock || typeof item.stock !== 'object') return 0;
+    return Object.values(item.stock).reduce((s, v) => s + (v || 0), 0);
+  };
+  const totalValue = items.reduce((sum, item) => sum + (item.price * getTotalStock(item)), 0);
   const totalSales = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
 
   // Fetch Items & Sales
@@ -118,7 +130,12 @@ const AdminDashboard = () => {
     setEditName(item.name);
     setEditPrice(item.price);
     setEditCategory(item.category);
-    setEditStock(item.stock);
+    // Normalize stock from Map (Mongoose returns it as a plain object or Map)
+    const s = emptyStock();
+    if (item.stock && typeof item.stock === 'object') {
+      SIZES.forEach(sz => { s[sz] = item.stock[sz] || 0; });
+    }
+    setEditStock(s);
   };
 
   const cancelEdit = () => {
@@ -138,7 +155,7 @@ const AdminDashboard = () => {
           name: editName,
           price: Number(editPrice),
           category: editCategory,
-          stock: Number(editStock)
+          stock: editStock   // object { XS: 0, S: 5, ... }
         })
       });
 
@@ -334,8 +351,20 @@ const AdminDashboard = () => {
                   <input type="text" value={category} onChange={e => setCategory(e.target.value)} required placeholder="e.g. Tops, Bottoms" />
                 </div>
                 <div className="input-group">
-                  <label>Initial Stock</label>
-                  <input type="number" value={stock} onChange={e => setStock(e.target.value)} required placeholder="e.g. 50" />
+                  <label>Stock Per Size</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+                    {SIZES.map(sz => (
+                      <div key={sz} style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, textAlign: 'center' }}>{sz}</span>
+                        <input
+                          type="number" min="0" placeholder="0"
+                          value={stock[sz] || ''}
+                          onChange={e => setStock(prev => ({ ...prev, [sz]: Number(e.target.value) || 0 }))}
+                          style={{ padding: '0.35rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'center', width: '100%' }}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 <button type="submit" className="btn-login" style={{ marginTop: '0.5rem' }}>Add to Inventory</button>
               </form>
@@ -371,7 +400,21 @@ const AdminDashboard = () => {
                             <td><input type="text" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '4px' }}/></td>
                             <td><input type="text" value={editCategory} onChange={e => setEditCategory(e.target.value)} style={{ width: '80px', padding: '0.4rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '4px' }}/></td>
                             <td><input type="number" step="0.01" value={editPrice} onChange={e => setEditPrice(e.target.value)} style={{ width: '80px', padding: '0.4rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '4px' }}/></td>
-                            <td><input type="number" value={editStock} onChange={e => setEditStock(e.target.value)} style={{ width: '60px', padding: '0.4rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '4px' }}/></td>
+                            <td>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                                {SIZES.map(sz => (
+                                  <div key={sz} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.1rem' }}>
+                                    <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontWeight: 700 }}>{sz}</span>
+                                    <input
+                                      type="number" min="0"
+                                      value={editStock[sz] !== undefined ? editStock[sz] : ''}
+                                      onChange={e => setEditStock(prev => ({ ...prev, [sz]: Number(e.target.value) || 0 }))}
+                                      style={{ width: '42px', padding: '0.3rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'center', fontSize: '0.8rem' }}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
                             <td>
                               <button onClick={() => saveEdit(item._id)} style={{ padding: '0.4rem 0.6rem', background: 'var(--accent-green)', color: '#000', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '0.5rem', fontSize: '0.75rem', fontWeight: 'bold' }}>Save</button>
                               <button onClick={cancelEdit} style={{ padding: '0.4rem 0.6rem', background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Cancel</button>
@@ -382,11 +425,7 @@ const AdminDashboard = () => {
                             <td>{item.name}</td>
                             <td><span className="badge">{item.category}</span></td>
                             <td>LKR {item.price.toFixed(2)}</td>
-                            <td>
-                              <span style={{ color: item.stock < 5 ? '#ff4757' : 'var(--text-primary)' }}>
-                                {item.stock}
-                              </span>
-                            </td>
+                            <td style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Total: {getTotalStock(item)}</td>
                             <td>
                               <button onClick={() => startEdit(item)} style={{ padding: '0.3rem 0.6rem', background: 'transparent', color: 'var(--accent-green)', border: '1px solid var(--accent-green)', borderRadius: '4px', cursor: 'pointer', marginRight: '0.5rem', fontSize: '0.75rem' }}>Edit</button>
                               <button onClick={() => handleDelete(item._id)} style={{ padding: '0.3rem 0.6rem', background: 'transparent', color: '#ff4757', border: '1px solid #ff4757', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Del</button>

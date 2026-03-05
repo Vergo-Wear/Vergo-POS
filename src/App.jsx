@@ -33,40 +33,39 @@ function App() {
     fetchItems();
   }, []);
 
-  // Add an item to the cart (enforces stock limit)
-  const handleAddItem = (item) => {
+  // Add an item to the cart (enforces per-size stock limit)
+  const handleAddItem = (item, size) => {
+    const cartKey = `${item._id}-${size}`;
+    const stockMap = item.stock || {};
+    const sizeStock = stockMap[size] || 0;
     setCart((prevCart) => {
-      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
+      const existingItem = prevCart.find((ci) => ci.cartKey === cartKey);
       if (existingItem) {
-        // Don't exceed available stock
-        if (existingItem.quantity >= item.stock) return prevCart;
-        return prevCart.map((cartItem) =>
-          cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem
+        if (existingItem.quantity >= sizeStock) return prevCart;
+        return prevCart.map((ci) =>
+          ci.cartKey === cartKey ? { ...ci, quantity: ci.quantity + 1 } : ci
         );
       }
-      if (item.stock <= 0) return prevCart; // Out of stock
-      return [...prevCart, { ...item, quantity: 1 }];
+      if (sizeStock <= 0) return prevCart;
+      return [...prevCart, { ...item, id: item._id, cartKey, size, sizeStock, quantity: 1 }];
     });
   };
 
-  // Update quantity of a cart item (enforces stock limit)
-  const handleUpdateQuantity = (id, newQuantity) => {
+  // Update quantity (uses cartKey)
+  const handleUpdateQuantity = (cartKey, newQuantity) => {
     if (newQuantity < 1) return;
     setCart((prevCart) =>
       prevCart.map((item) => {
-        if (item.id !== id) return item;
-        // Clamp to available stock
-        const clamped = item.stock !== undefined ? Math.min(newQuantity, item.stock) : newQuantity;
+        if (item.cartKey !== cartKey) return item;
+        const clamped = item.sizeStock !== undefined ? Math.min(newQuantity, item.sizeStock) : newQuantity;
         return { ...item, quantity: clamped };
       })
     );
   };
 
-  // Remove item from cart
-  const handleRemoveItem = (id) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== id));
+  // Remove item (uses cartKey)
+  const handleRemoveItem = (cartKey) => {
+    setCart((prevCart) => prevCart.filter((item) => item.cartKey !== cartKey));
   };
 
   // Calculate cart total
@@ -114,7 +113,8 @@ function App() {
     billText += "===========================\n\n";
     
     cart.forEach(item => {
-      billText += `${item.name.toUpperCase()}\n`;
+      const sizePart = item.size ? ` [${item.size}]` : '';
+      billText += `${item.name.toUpperCase()}${sizePart}\n`;
       billText += `Qty: ${item.quantity}  x  LKR ${item.price.toFixed(2)}  =  LKR ${(item.quantity * item.price).toFixed(2)}\n`;
       billText += "---------------------------\n";
     });
@@ -240,7 +240,7 @@ function App() {
                 <ItemCard
                   key={item._id}
                   item={item}
-                  onAdd={() => handleAddItem({ id: item._id, _id: item._id, ...item })}
+                  onAdd={(size) => handleAddItem({ id: item._id, _id: item._id, ...item }, size)}
                 />
               ))}
             </div>
@@ -386,7 +386,10 @@ function App() {
                     <tbody>
                       {cart.map((item, idx) => (
                         <tr key={idx}>
-                          <td>{item.name}</td>
+                          <td>
+                            {item.name}
+                            {item.size && <span style={{ marginLeft: '0.4rem', fontSize: '0.7rem', fontWeight: 700, padding: '0.1rem 0.35rem', borderRadius: '3px', background: 'rgba(0,255,163,0.12)', color: 'var(--accent-green)', border: '1px solid rgba(0,255,163,0.25)' }}>{item.size}</span>}
+                          </td>
                           <td>{item.quantity}</td>
                           <td>LKR {(item.price * item.quantity).toFixed(2)}</td>
                         </tr>
@@ -452,7 +455,10 @@ function App() {
                     <tbody>
                       {saleData.items.map((item, idx) => (
                         <tr key={idx}>
-                          <td style={{ fontWeight: '600' }}>{item.name.toUpperCase()}</td>
+                          <td style={{ fontWeight: '600' }}>
+                            {item.name.toUpperCase()}
+                            {item.size && <span style={{ marginLeft: '0.4rem', fontSize: '0.68rem', fontWeight: 700, padding: '0.1rem 0.35rem', borderRadius: '3px', background: '#eee', color: '#333' }}>{item.size}</span>}
+                          </td>
                           <td style={{ textAlign: 'center' }}>{item.quantity}</td>
                           <td style={{ textAlign: 'right', fontWeight: '600' }}>{(item.price * item.quantity).toFixed(2)}</td>
                         </tr>

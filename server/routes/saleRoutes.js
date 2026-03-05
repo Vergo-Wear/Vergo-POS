@@ -39,17 +39,23 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'Missing required sale data (items, amount, or order number).' });
     }
 
-    // Validate stock availability for all items before saving
     const Item = require('../models/Item');
+
+    // Validate per-size stock availability
     for (const saleItem of items) {
-      if (!saleItem.id && !saleItem._id) continue;
       const itemId = saleItem.id || saleItem._id;
+      if (!itemId) continue;
       const dbItem = await Item.findById(itemId);
       if (!dbItem) continue;
-      if (dbItem.stock < saleItem.quantity) {
-        return res.status(400).json({
-          message: `Insufficient stock for "${dbItem.name}". Available: ${dbItem.stock}, Requested: ${saleItem.quantity}`
-        });
+
+      const size = saleItem.size;
+      if (size) {
+        const available = dbItem.stock.get(size) || 0;
+        if (available < saleItem.quantity) {
+          return res.status(400).json({
+            message: `Insufficient stock for "${dbItem.name}" in size ${size}. Available: ${available}, Requested: ${saleItem.quantity}`
+          });
+        }
       }
     }
 
@@ -65,13 +71,16 @@ router.post('/', async (req, res) => {
 
     const sale = await newSale.save();
 
-    // Decrement stock for each sold item
+    // Decrement per-size stock for each sold item
     for (const saleItem of items) {
       const itemId = saleItem.id || saleItem._id;
       if (!itemId) continue;
-      await Item.findByIdAndUpdate(itemId, {
-        $inc: { stock: -saleItem.quantity }
-      });
+      const size = saleItem.size;
+      if (size) {
+        await Item.findByIdAndUpdate(itemId, {
+          $inc: { [`stock.${size}`]: -saleItem.quantity }
+        });
+      }
     }
 
     res.status(201).json(sale);
