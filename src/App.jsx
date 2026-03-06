@@ -16,7 +16,7 @@ function App() {
   const [isGenerated, setIsGenerated] = useState(false);
   const [saleData, setSaleData] = useState(null);
   const [discount, setDiscount] = useState('');
-  const [discountType, setDiscountType] = useState('amount'); // 'amount' or 'percent'
+  const [discountType, setDiscountType] = useState('percent'); // 'percent' only now
 
   const navigate = useNavigate();
 
@@ -214,7 +214,7 @@ function App() {
     setCustomerName('');
     setEmailError('');
     setDiscount('');
-    setDiscountType('amount');
+    setDiscountType('percent');
   };
 
   return (
@@ -343,23 +343,23 @@ function App() {
                 {emailError && <div style={{ color: '#ff4757', fontSize: '0.75rem', marginTop: '0.25rem' }}>{emailError}</div>}
               </div>
 
-              {/* Discount */}
+              {/* Discount Percentage */}
               <div className="discount-block">
-                <label className="cart-label">Discount <span style={{ fontWeight: 400, opacity: 0.6 }}>(Optional)</span></label>
+                <label className="cart-label">Discount Percentage (%) <span style={{ fontWeight: 400, opacity: 0.6 }}>(Optional)</span></label>
                 <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                   <input
                     type="number"
                     id="discount-input"
                     min="0"
+                    max="100"
                     step="1"
-                    placeholder={discountType === 'percent' ? '10' : '500'}
+                    placeholder="e.g. 10"
                     value={discount}
                     onChange={(e) => setDiscount(e.target.value)}
                     style={{ flex: 1, padding: '0.4rem 0.5rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '0.85rem', fontFamily: 'inherit' }}
                   />
-                  <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
-                    <button onClick={() => setDiscountType('amount')} style={{ padding: '0.4rem 0.55rem', background: discountType === 'amount' ? 'var(--accent-green)' : 'transparent', color: discountType === 'amount' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.78rem' }}>LKR</button>
-                    <button onClick={() => setDiscountType('percent')} style={{ padding: '0.4rem 0.55rem', background: discountType === 'percent' ? 'var(--accent-green)' : 'transparent', color: discountType === 'percent' ? '#000' : 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.78rem' }}>%</button>
+                  <div style={{ padding: '0.4rem 0.8rem', background: 'var(--surface-hover)', borderRadius: '6px', color: 'var(--accent-green)', fontWeight: 'bold', border: '1px solid var(--border-color)' }}>
+                    %
                   </div>
                 </div>
                 {discountAmount > 0 && <p style={{ fontSize: '0.72rem', color: 'var(--accent-green)', marginTop: '0.25rem' }}>Saving: LKR {discountAmount.toFixed(2)}</p>}
