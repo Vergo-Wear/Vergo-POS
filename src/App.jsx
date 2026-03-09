@@ -17,6 +17,8 @@ function App() {
   const [saleData, setSaleData] = useState(null);
   const [discount, setDiscount] = useState('');
   const [discountType, setDiscountType] = useState('percent'); // 'percent' only now
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isBilling, setIsBilling] = useState(false);
 
   const navigate = useNavigate();
 
@@ -102,6 +104,12 @@ function App() {
     : Math.min(discountValue, cartTotal);
   const finalTotal = Math.max(cartTotal - discountAmount, 0);
 
+  // Filter items based on search term
+  const filteredItems = items.filter(item => 
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    item.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   // Proceed to Summary
   const handleProceedToBill = () => {
     setEmailError('');
@@ -124,6 +132,9 @@ function App() {
 
   // Generate Bill (Email + Save to DB)
   const handleGenerateBill = async () => {
+    if (isBilling) return;
+    setIsBilling(true);
+
     // Generate a unique order number for identification
     const orderNum = `VRG-${Math.floor(1000 + Math.random() * 9000)}-${Date.now().toString().slice(-4)}`;
     
@@ -198,7 +209,10 @@ function App() {
     try {
       const res = await fetch(`${API_URL}/api/items`);
       if (res.ok) setItems(await res.json());
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      setIsBilling(false);
+    }
   };
 
   const handlePrint = () => {
@@ -267,14 +281,38 @@ function App() {
         
         {/* Left Column: Products Grid */}
         <section className="products-section">
-          <h2>Available Items</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <h2 style={{ margin: 0 }}>Available Items</h2>
+            <div style={{ position: 'relative', width: '100%', maxWidth: '300px' }}>
+              <input
+                type="text"
+                placeholder="Search products or category..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.6rem 1rem 0.6rem 2.5rem',
+                  background: 'var(--surface-color)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '20px',
+                  color: '#fff',
+                  fontSize: '0.9rem',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  transition: 'border-color 0.2s'
+                }}
+                className="search-input-field"
+              />
+              <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>🔍</span>
+            </div>
+          </div>
           {loadingItems ? (
             <p style={{ color: 'var(--text-secondary)' }}>Loading inventory...</p>
-          ) : items.length === 0 ? (
-            <p style={{ color: 'var(--text-secondary)' }}>No items found in the database.</p>
+          ) : filteredItems.length === 0 ? (
+            <p style={{ color: 'var(--text-secondary)' }}>{searchTerm ? `No items found matching "${searchTerm}"` : "No items found in the database."}</p>
           ) : (
             <div className="products-grid">
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <ItemCard
                   key={item._id}
                   item={item}
@@ -450,8 +488,10 @@ function App() {
                   </div>
                 </div>
                 <div className="modal-actions">
-                  <button className="btn-secondary" onClick={() => setShowSummary(false)}>Back to Cart</button>
-                  <button className="btn-bill" onClick={handleGenerateBill}>Bill</button>
+                  <button className="btn-secondary" onClick={() => setShowSummary(false)} disabled={isBilling}>Back to Cart</button>
+                  <button className="btn-bill" onClick={handleGenerateBill} disabled={isBilling}>
+                    {isBilling ? 'Processing...' : 'Bill'}
+                  </button>
                 </div>
               </>
             ) : (

@@ -1070,25 +1070,55 @@ button {
 }
 
 @media print {
+  @page {
+    margin: 0.5cm;
+    size: portrait;
+  }
+
+  body, html {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   body * {
     visibility: hidden;
   }
-  .receipt-container, .receipt-container * {
-    visibility: visible;
-  }
-  .receipt-container {
+
+  .summary-modal, .receipt-view, .modal-overlay {
+    background: transparent !important;
+    box-shadow: none !important;
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
-    box-shadow: none;
+    padding: 0;
     margin: 0;
-    padding: 2rem;
+    overflow: visible !important;
   }
-  .modal-overlay {
-    background: white;
+
+  .receipt-container, .receipt-container * {
+    visibility: visible;
   }
-  .modal-actions {
+
+  .receipt-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px; /* Force a receipt-like width instead of expanding infinitely */
+    margin: 0 auto !important;
+    padding: 10px !important;
+    box-shadow: none !important;
+    border: none !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Hide non-receipt elements */
+  .modal-actions, .success-icon, .receipt-view > h3, .btn-print {
     display: none !important;
   }
 }

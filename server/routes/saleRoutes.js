@@ -39,6 +39,11 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'Missing required sale data (items, amount, or order number).' });
     }
 
+    const existingSale = await Sale.findOne({ orderNumber });
+    if (existingSale) {
+      return res.status(200).json(existingSale); // Return existing sale instead of creating a duplicate
+    }
+
     const Item = require('../models/Item');
 
     // Validate per-size stock availability

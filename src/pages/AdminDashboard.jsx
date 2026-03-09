@@ -38,13 +38,31 @@ const AdminDashboard = () => {
   // Custom Confirm State
   const [isResetConfirming, setIsResetConfirming] = useState(false);
 
+  // Search States
+  const [itemSearchTerm, setItemSearchTerm] = useState('');
+  const [saleSearchTerm, setSaleSearchTerm] = useState('');
+
   // Total inventory value: sum price × total stock across all sizes
   const getTotalStock = (item) => {
     if (!item.stock || typeof item.stock !== 'object') return 0;
     return Object.values(item.stock).reduce((s, v) => s + (v || 0), 0);
   };
   const totalValue = items.reduce((sum, item) => sum + (item.price * getTotalStock(item)), 0);
+  const totalStockCount = items.reduce((sum, item) => sum + getTotalStock(item), 0);
   const totalSales = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+
+  // Filtered Items
+  const filteredItems = items.filter(item => 
+    item.name.toLowerCase().includes(itemSearchTerm.toLowerCase()) || 
+    item.category.toLowerCase().includes(itemSearchTerm.toLowerCase())
+  );
+
+  // Filtered Sales
+  const filteredSales = sales.filter(sale => 
+    (sale.orderNumber && sale.orderNumber.toLowerCase().includes(saleSearchTerm.toLowerCase())) ||
+    (sale.customerName && sale.customerName.toLowerCase().includes(saleSearchTerm.toLowerCase())) ||
+    (sale.customerEmail && sale.customerEmail.toLowerCase().includes(saleSearchTerm.toLowerCase()))
+  );
 
   // Fetch Items & Sales
   const fetchItemsAndSales = async () => {
@@ -236,7 +254,12 @@ const AdminDashboard = () => {
           <div className="stat-card">
             <div className="stat-title">Total Products</div>
             <div className="stat-value">{items.length}</div>
-            <div className="stat-trend neutral">In Database</div>
+            <div className="stat-trend neutral">Unique Types</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-title">Total Stock Items</div>
+            <div className="stat-value">{totalStockCount}</div>
+            <div className="stat-trend neutral">Units Available</div>
           </div>
           <div className="stat-card">
             <div className="stat-title">Gross Sales Volume</div>
@@ -264,6 +287,16 @@ const AdminDashboard = () => {
                   style={{ padding: '0.4rem 0.8rem', background: 'var(--surface-hover)', color: 'var(--accent-green)', border: '1px solid var(--accent-green)', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }}>
                   Archived Reports ({reports.length})
                 </button>
+              </div>
+              <div style={{ position: 'relative', width: '200px' }}>
+                <input
+                  type="text"
+                  placeholder="Search sales..."
+                  value={saleSearchTerm}
+                  onChange={(e) => setSaleSearchTerm(e.target.value)}
+                  style={{ width: '100%', padding: '0.4rem 0.6rem 0.4rem 1.8rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.8rem', outline: 'none' }}
+                />
+                <span style={{ position: 'absolute', left: '0.5rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, fontSize: '0.8rem' }}>🔍</span>
               </div>
               {!isResetConfirming ? (
                 <button 
@@ -296,8 +329,8 @@ const AdminDashboard = () => {
               )}
             </div>
             <div className="inventory-list-card" style={{ marginBottom: '2rem' }}>
-              {sales.length === 0 ? (
-                <p style={{ padding: '2rem', color: 'var(--text-secondary)', textAlign: 'center' }}>No sales have been recorded yet.</p>
+              {filteredSales.length === 0 ? (
+                <p style={{ padding: '2rem', color: 'var(--text-secondary)', textAlign: 'center' }}>{saleSearchTerm ? `No sales matching "${saleSearchTerm}"` : "No sales have been recorded yet."}</p>
               ) : (
                 <table className="inventory-table">
                   <thead>
@@ -312,7 +345,7 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {sales.map(s => (
+                    {filteredSales.map(s => (
                         <tr key={s._id}>
                           <td style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{s.orderNumber || 'N/A'}</td>
                           <td>{new Date(s.date).toLocaleDateString()} {new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
@@ -373,7 +406,19 @@ const AdminDashboard = () => {
 
           {/* Items List */}
           <section className="dashboard-section">
-            <h3>Current Inventory</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3>Current Inventory</h3>
+              <div style={{ position: 'relative', width: '200px' }}>
+                <input
+                  type="text"
+                  placeholder="Search inventory..."
+                  value={itemSearchTerm}
+                  onChange={(e) => setItemSearchTerm(e.target.value)}
+                  style={{ width: '100%', padding: '0.4rem 0.6rem 0.4rem 1.8rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.8rem', outline: 'none' }}
+                />
+                <span style={{ position: 'absolute', left: '0.5rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, fontSize: '0.8rem' }}>🔍</span>
+              </div>
+            </div>
             <div className="inventory-list-card">
               {loading ? (
                 <p style={{ padding: '2rem', color: 'var(--text-secondary)' }}>Loading items...</p>
@@ -393,7 +438,7 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map(item => (
+                    {filteredItems.map(item => (
                       <tr key={item._id}>
                         {editingId === item._id ? (
                           <>
