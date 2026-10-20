@@ -125,6 +125,14 @@ function App() {
       setEmailError("Discount cannot be negative.");
       return;
     }
+    if (discountType === 'percent' && discountValue > 100) {
+      setEmailError("Percentage discount cannot exceed 100%.");
+      return;
+    }
+    if (discountType === 'amount' && discountValue > cartTotal) {
+      setEmailError("Discount amount cannot exceed the cart total.");
+      return;
+    }
     setIsGenerated(false);
     setSaleData(null);
     setShowSummary(true);
@@ -361,6 +369,7 @@ function App() {
                   id="customer-name"
                   placeholder="e.g. John Doe"
                   value={customerName}
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => setCustomerName(e.target.value)}
                   className="email-input"
                 />
@@ -374,6 +383,7 @@ function App() {
                   id="customer-email"
                   placeholder="customer@example.com"
                   value={customerEmail}
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => { setCustomerEmail(e.target.value); setEmailError(''); }}
                   className={`email-input ${emailError ? 'error-border' : ''}`}
                   style={emailError ? { borderColor: '#ff4757' } : {}}
@@ -381,23 +391,53 @@ function App() {
                 {emailError && <div style={{ color: '#ff4757', fontSize: '0.75rem', marginTop: '0.25rem' }}>{emailError}</div>}
               </div>
 
-              {/* Discount Percentage */}
+              {/* Discount Block with LKR / % toggle */}
               <div className="discount-block">
-                <label className="cart-label">Discount Percentage (%) <span style={{ fontWeight: 400, opacity: 0.6 }}>(Optional)</span></label>
+                <label className="cart-label">Discount {discountType === 'percent' ? '(%)' : '(LKR)'} <span style={{ fontWeight: 400, opacity: 0.6 }}>(Optional)</span></label>
                 <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                   <input
                     type="number"
                     id="discount-input"
                     min="0"
-                    max="100"
-                    step="1"
-                    placeholder="e.g. 10"
+                    max={discountType === 'percent' ? 100 : undefined}
+                    step={discountType === 'percent' ? '1' : '0.01'}
+                    placeholder={discountType === 'percent' ? 'e.g. 10' : 'e.g. 500'}
                     value={discount}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setDiscount(e.target.value)}
                     style={{ flex: 1, padding: '0.4rem 0.5rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '0.85rem', fontFamily: 'inherit' }}
                   />
-                  <div style={{ padding: '0.4rem 0.8rem', background: 'var(--surface-hover)', borderRadius: '6px', color: 'var(--accent-green)', fontWeight: 'bold', border: '1px solid var(--border-color)' }}>
-                    %
+                  <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
+                    <button
+                      type="button"
+                      onClick={() => setDiscountType('percent')}
+                      style={{
+                        padding: '0.4rem 0.6rem',
+                        background: discountType === 'percent' ? 'var(--accent-green)' : 'transparent',
+                        color: discountType === 'percent' ? '#000' : 'var(--text-secondary)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        fontSize: '0.78rem'
+                      }}
+                    >
+                      %
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDiscountType('amount')}
+                      style={{
+                        padding: '0.4rem 0.6rem',
+                        background: discountType === 'amount' ? 'var(--accent-green)' : 'transparent',
+                        color: discountType === 'amount' ? '#000' : 'var(--text-secondary)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        fontSize: '0.78rem'
+                      }}
+                    >
+                      LKR
+                    </button>
                   </div>
                 </div>
                 {discountAmount > 0 && <p style={{ fontSize: '0.72rem', color: 'var(--accent-green)', marginTop: '0.25rem' }}>Saving: LKR {discountAmount.toFixed(2)}</p>}

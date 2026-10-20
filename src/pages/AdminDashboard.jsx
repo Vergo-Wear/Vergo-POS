@@ -7,7 +7,7 @@ const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 
 const emptyStock = () => {
   const s = {};
-  SIZES.forEach(sz => s[sz] = 0);
+  SIZES.forEach(sz => s[sz] = '');
   return s;
 };
 
@@ -44,8 +44,9 @@ const AdminDashboard = () => {
 
   // Total inventory value: sum price × total stock across all sizes
   const getTotalStock = (item) => {
+    if (typeof item.stock === 'number') return item.stock;
     if (!item.stock || typeof item.stock !== 'object') return 0;
-    return Object.values(item.stock).reduce((s, v) => s + (v || 0), 0);
+    return Object.values(item.stock).reduce((s, v) => s + (Number(v) || 0), 0);
   };
   const totalValue = items.reduce((sum, item) => sum + (item.price * getTotalStock(item)), 0);
   const totalStockCount = items.reduce((sum, item) => sum + getTotalStock(item), 0);
@@ -112,6 +113,17 @@ const AdminDashboard = () => {
       return;
     }
 
+    const numPrice = Number(price);
+    if (isNaN(numPrice) || numPrice <= 0) {
+      setMessage('Please enter a valid price greater than 0.');
+      return;
+    }
+
+    const safeStock = {};
+    SIZES.forEach(sz => {
+      safeStock[sz] = Math.max(0, parseInt(stock[sz], 10) || 0);
+    });
+
     try {
       const res = await fetch(`${API_URL}/api/items`, {
         method: 'POST',
@@ -120,10 +132,10 @@ const AdminDashboard = () => {
           'x-auth-token': token
         },
         body: JSON.stringify({
-          name,
-          price: Number(price),
-          category,
-          stock  // per-size object { XS: 5, S: 3, ... }
+          name: name.trim(),
+          price: numPrice,
+          category: category.trim(),
+          stock: safeStock
         })
       });
 
@@ -148,11 +160,11 @@ const AdminDashboard = () => {
     setEditName(item.name);
     setEditPrice(item.price);
     setEditCategory(item.category);
-    // Normalize stock from Map (Mongoose returns it as a plain object or Map)
-    const s = emptyStock();
-    if (item.stock && typeof item.stock === 'object') {
-      SIZES.forEach(sz => { s[sz] = item.stock[sz] || 0; });
-    }
+    const s = {};
+    SIZES.forEach(sz => {
+      const val = (item.stock && typeof item.stock === 'object') ? item.stock[sz] : 0;
+      s[sz] = val !== undefined && val !== null ? val : 0;
+    });
     setEditStock(s);
   };
 
@@ -162,6 +174,17 @@ const AdminDashboard = () => {
 
   const saveEdit = async (id) => {
     const token = localStorage.getItem('adminToken');
+    const numPrice = Number(editPrice);
+    if (isNaN(numPrice) || numPrice <= 0) {
+      alert("Please enter a valid price greater than 0.");
+      return;
+    }
+
+    const safeStock = {};
+    SIZES.forEach(sz => {
+      safeStock[sz] = Math.max(0, parseInt(editStock[sz], 10) || 0);
+    });
+
     try {
       const res = await fetch(`${API_URL}/api/items/${id}`, {
         method: 'PUT',
@@ -170,19 +193,23 @@ const AdminDashboard = () => {
           'x-auth-token': token
         },
         body: JSON.stringify({
-          name: editName,
-          price: Number(editPrice),
-          category: editCategory,
-          stock: editStock   // object { XS: 0, S: 5, ... }
+          name: editName.trim(),
+          price: numPrice,
+          category: editCategory.trim(),
+          stock: safeStock
         })
       });
 
       if (res.ok) {
         setEditingId(null);
         fetchItemsAndSales();
+      } else {
+        const data = await res.json();
+        alert(`Error: ${data.message || 'Failed to update item'}`);
       }
     } catch (err) {
       console.error(err);
+      alert('Server error while saving item.');
     }
   };
 
@@ -377,7 +404,16 @@ const AdminDashboard = () => {
                 </div>
                 <div className="input-group">
                   <label>Price (LKR)</label>
-                  <input type="number" step="0.01" value={price} onChange={e => setPrice(e.target.value)} required placeholder="e.g. 2500" />
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={price}
+                    onFocus={(e) => e.target.select()}
+                    onChange={e => setPrice(e.target.value)}
+                    required
+                    placeholder="e.g. 2500"
+                  />
                 </div>
                 <div className="input-group">
                   <label>Category</label>
@@ -390,9 +426,18 @@ const AdminDashboard = () => {
                       <div key={sz} style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                         <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, textAlign: 'center' }}>{sz}</span>
                         <input
-                          type="number" min="0" placeholder="0"
-                          value={stock[sz] || ''}
-                          onChange={e => setStock(prev => ({ ...prev, [sz]: Number(e.target.value) || 0 }))}
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={stock[sz] !== undefined ? stock[sz] : ''}
+                          onFocus={(e) => e.target.select()}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setStock(prev => ({
+                              ...prev,
+                              [sz]: val === '' ? '' : Math.max(0, parseInt(val, 10) || 0)
+                            }));
+                          }}
                           style={{ padding: '0.35rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'center', width: '100%' }}
                         />
                       </div>
@@ -444,17 +489,26 @@ const AdminDashboard = () => {
                           <>
                             <td><input type="text" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '4px' }}/></td>
                             <td><input type="text" value={editCategory} onChange={e => setEditCategory(e.target.value)} style={{ width: '80px', padding: '0.4rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '4px' }}/></td>
-                            <td><input type="number" step="0.01" value={editPrice} onChange={e => setEditPrice(e.target.value)} style={{ width: '80px', padding: '0.4rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '4px' }}/></td>
+                            <td><input type="number" step="0.01" min="0" value={editPrice} onFocus={(e) => e.target.select()} onChange={e => setEditPrice(e.target.value)} style={{ width: '80px', padding: '0.4rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '4px' }}/></td>
                             <td>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
                                 {SIZES.map(sz => (
                                   <div key={sz} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.1rem' }}>
                                     <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontWeight: 700 }}>{sz}</span>
                                     <input
-                                      type="number" min="0"
+                                      type="number"
+                                      min="0"
+                                      placeholder="0"
                                       value={editStock[sz] !== undefined ? editStock[sz] : ''}
-                                      onChange={e => setEditStock(prev => ({ ...prev, [sz]: Number(e.target.value) || 0 }))}
-                                      style={{ width: '42px', padding: '0.3rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'center', fontSize: '0.8rem' }}
+                                      onFocus={(e) => e.target.select()}
+                                      onChange={e => {
+                                        const val = e.target.value;
+                                        setEditStock(prev => ({
+                                          ...prev,
+                                          [sz]: val === '' ? '' : Math.max(0, parseInt(val, 10) || 0)
+                                        }));
+                                      }}
+                                      style={{ width: '44px', padding: '0.3rem', background: 'var(--bg-color)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'center', fontSize: '0.8rem' }}
                                     />
                                   </div>
                                 ))}

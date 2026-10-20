@@ -61,6 +61,12 @@ router.post('/', async (req, res) => {
             message: `Insufficient stock for "${dbItem.name}" in size ${size}. Available: ${available}, Requested: ${saleItem.quantity}`
           });
         }
+      } else if (typeof dbItem.stock === 'number') {
+        if (dbItem.stock < saleItem.quantity) {
+          return res.status(400).json({
+            message: `Insufficient stock for "${dbItem.name}". Available: ${dbItem.stock}, Requested: ${saleItem.quantity}`
+          });
+        }
       }
     }
 
@@ -76,7 +82,7 @@ router.post('/', async (req, res) => {
 
     const sale = await newSale.save();
 
-    // Decrement per-size stock for each sold item
+    // Decrement stock for each sold item (size-based or flat stock)
     for (const saleItem of items) {
       const itemId = saleItem.id || saleItem._id;
       if (!itemId) continue;
@@ -85,6 +91,13 @@ router.post('/', async (req, res) => {
         await Item.findByIdAndUpdate(itemId, {
           $inc: { [`stock.${size}`]: -saleItem.quantity }
         });
+      } else {
+        const dbItem = await Item.findById(itemId);
+        if (dbItem && typeof dbItem.stock === 'number') {
+          await Item.findByIdAndUpdate(itemId, {
+            $inc: { stock: -saleItem.quantity }
+          });
+        }
       }
     }
 
