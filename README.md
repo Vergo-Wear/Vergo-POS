@@ -9,6 +9,12 @@
 </p>
 
 <p align="center">
+  <a href="https://vergo-pos.vercel.app/" target="_blank">
+    <img src="https://img.shields.io/badge/Live%20Demo-vergo--pos.vercel.app-00ffa3?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" />
+  </a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/React-19.2.0-61dafb?style=flat-square&logo=react" alt="React 19" />
   <img src="https://img.shields.io/badge/Vite-7.3.1-646CFF?style=flat-square&logo=vite" alt="Vite" />
   <img src="https://img.shields.io/badge/Node.js-Express_5-339933?style=flat-square&logo=node.js" alt="Express" />
@@ -240,6 +246,9 @@ Run the CLI seeding utilities from the `server/` directory to create initial use
 ---
 
 ## 🌐 Deployment
+
+### Live Application
+- **Production URL**: [https://vergo-pos.vercel.app/](https://vergo-pos.vercel.app/)
 
 ### Frontend (Vercel)
 The repository includes `vercel.json` configured with SPA rewrites:
